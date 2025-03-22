@@ -40,11 +40,25 @@ docker run --name mysqldb --network 06dockercompose_spring-mysql-net --volume 06
 ## 문제1
 
 > mysqldb1과 mysqldb2 컨테이너가 동시에 구동되지 않는 문제<br>
-> mysqldb 컨테이너가 하나 구동중이라면 docker compose 실행 오류로 mysqldb2뿐만이 아닌 springapp 또한 구동 실패<br>
+> mysqldb1 컨테이너가 구동중이라면 docker compose 실행 오류로 mysqldb2뿐만이 아닌 springapp 또한 구동 실패<br>
 > 동시에 mysql 컨테이너들이 켜지더라도 파일 잠금 오류가 발생해 spring app에서 mysql db에 접근 불가
 
 ### 원인
-docker-compose.yml에서 mysqldb1과 mysqldb2 컨테이너가 동시에 같은 볼륨을 공유하여 충돌 - 파일 잠금 오류(ibdata1 error:11) 발생
+docker-compose.yml에서 mysqldb1과 mysqldb2 컨테이너가 동시에 같은 볼륨을 공유하여 충돌 - 파일 잠금 오류(ibdata1 error:11) 발생<br>
+```
+app:
+    container_name: springbootapp
+         ...
+         ...
+         ...
+    depends_on:
+      db:
+        condition: service_healthy
+```
+Docker Compose는 컨테이너 간의 의존성을 정의함 - depends_on에 지정된 db 서비스가 먼저 실행된 후 app을 실행
+<br><br>
+이미 mysql 컨테이너를 하나 실행시켰을 경우 docker compose로 또다른 mysql 컨테이너와 springapp을 실행시키려고 시도하면 볼륨 충돌로 인해 mysql 컨테이너 실행에 실패하고, depends_on에 지정된 springapp 또한 실패한다.
+
 
 <br>
 
