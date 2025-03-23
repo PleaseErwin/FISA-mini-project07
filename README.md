@@ -3,6 +3,45 @@
 ## 2개 이상의 spring app에서 mysql db 컨테이너에 접속
 
 
+
+<br>
+
+<b>DB 접속</b>
+```
+curl localhost:8080/one # 조회
+curl -X POST localhost:8080/save # 저장
+```
+
+## 자동 실행 및 백업
+
+<b>실행 스크립트 start_docker.sh</b>
+```
+#!/bin/bash
+
+docker-compose up -d
+```
+<br>
+
+<b>백업 스크립트 backup_db.sh</b>
+```
+#!/bin/bash
+
+# 방법 1 : copy
+docker cp mysqldb:/var/lib/mysql/fisa ~/06.dockerCompose/backup/backup_$(date +%F)_$(date +%T)
+
+# 방법 2 : mysqldump
+docker exec mysqldb sh -c "exec mysqldump -u'root' -p'root' --databases fisa" > ~/06.dockerCompose/backup_dump/backdump_$(date +%F)_$(date +%T).sql
+```
+<br>
+
+<b>백업 Crontab</b>
+```
+# Crontab 편집
+crontab -e
+
+* * * * * /home/ubuntu/06.dockerCompose/backup_db.sh >> /home/ubuntu/06.dockerCompose/cron.log 2>&1
+```
+
 <br><br>
 
 # mysql 컨테이너 이중화를 통한 고가용성 구현
@@ -10,12 +49,12 @@
 ### 2. mysql 컨테이너 개별 구동
 
 ```
-docker run --name mysqldb --network 06dockercompose_spring-mysql-net --volume 06dockercompose_db_data:/var/lib/mysql \
+docker run --name mysqldb --network 06dockercompose_spring-mysql-net --volume db_data:/var/lib/mysql \
     -e MYSQL_ROOT_PASSWORD=root \
     -e MYSQL_DATABASE=fisa \
     -e MYSQL_USER=user01 \
     -e MYSQL_PASSWORD=user01 \
-    -d -p 3307:3306 mysql:8.0
+    -d -p 3306:3306 mysql:8.0
 ```
 
 <br>
@@ -31,7 +70,7 @@ docker run --name mysqldb --network 06dockercompose_spring-mysql-net --volume 06
 
 <br>
 
-두 경우 모두 mysql 컨테이너의 볼륨을 똑같이 설정했더니 TroubleShooting-문제1 발생
+두 경우 모두 mysql 컨테이너들의 볼륨을 똑같이 설정했더니 TroubleShooting-문제1 발생
 
 <br>
 
