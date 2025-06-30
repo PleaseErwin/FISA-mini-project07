@@ -46,7 +46,7 @@ crontab -e
 
 # mysql 컨테이너 이중화를 통한 고가용성 구현
 
-### 2. mysql 컨테이너 개별 구동
+### 1. mysql 컨테이너 개별 구동
 
 ```
 docker run --name mysqldb --network 06dockercompose_spring-mysql-net --volume db_data:/var/lib/mysql \
@@ -57,14 +57,51 @@ docker run --name mysqldb --network 06dockercompose_spring-mysql-net --volume db
     -d -p 3306:3306 mysql:8.0
 ```
 
-<br>
 
 ### 2. docker compose로 mysql 컨테이너 2개를 한번에 구동 
 
 ```
 #docker-compose.yml
 
+version: "3.8"
 
+services:
+  mysqldb1:
+    image: mysql:8.0
+    container_name: mysqldb1
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fisa
+      MYSQL_USER: user01
+      MYSQL_PASSWORD: user01
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - spring-mysql-net
+
+  mysqldb2:
+    image: mysql:8.0
+    container_name: mysqldb2
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: fisa
+      MYSQL_USER: user01
+      MYSQL_PASSWORD: user01
+    ports:
+      - "3308:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - spring-mysql-net
+
+volumes:
+  db_data:
+
+networks:
+  spring-mysql-net:
+    external: true
 
 ```
 
@@ -110,8 +147,13 @@ Docker Compose는 컨테이너 간의 의존성을 정의함 - depends_on에 지
 ### 원인
 Docker Compose는 볼륨, 네트워크 등의 리소스를 관리할 때 프로젝트 디렉토리 이름을 자동으로 prefix 추가하여 고유한 이름을 생성
 
-<br><br>
+| 생성 방법                      | 네트워크 이름                        |
+|------------------------------------------------|--------------------------------------|
+| docker network create spring-mysql-net         | prefix 안 붙음                        |
+| docker-compose up (external: false)            | prefix 붙음                           |
+| docker-compose up (external: true)             | 기존 네트워크 그대로 사용             |
 
+<br>
 
 <b>방법1 : volumes에서 name 속성을 사용하여 이름 고정</b>
 ```
@@ -129,5 +171,3 @@ volumes:
 COMPOSE_PROJECT_NAME=
 ```
 비워두면 네임스페이스가 붙지 않고 docker-compose.yml의 설정 그대로 생성됨
-
-
